@@ -54,6 +54,12 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'admin_bootstrap' => [
+        'name' => env('ADMIN_BOOTSTRAP_NAME'),
+        'email' => env('ADMIN_BOOTSTRAP_EMAIL'),
+        'password' => env('ADMIN_BOOTSTRAP_PASSWORD'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

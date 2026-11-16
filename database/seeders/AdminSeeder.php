@@ -34,6 +34,47 @@ class AdminSeeder extends Seeder
                     }
                 });
 
+            $adminBootstrap = config('app.admin_bootstrap');
+            $hasAdminBootstrap = array_filter(
+                $adminBootstrap,
+                static fn ($value): bool => $value !== null && $value !== ''
+            ) !== [];
+
+            if ($hasAdminBootstrap) {
+                $name = $adminBootstrap['name'] ?? null;
+                $email = $adminBootstrap['email'] ?? null;
+                $password = $adminBootstrap['password'] ?? null;
+
+                if (
+                    ! is_string($name)
+                    || trim($name) === ''
+                    || ! is_string($email)
+                    || filter_var($email, FILTER_VALIDATE_EMAIL) === false
+                    || ! is_string($password)
+                    || strlen($password) < 16
+                ) {
+                    throw new \RuntimeException('Admin bootstrap configuration is incomplete or invalid.');
+                }
+
+                if (! User::query()->where('role', 'admin')->where('status', 'active')->exists()) {
+                    $existingUser = User::query()->where('email', $email)->first();
+
+                    if ($existingUser !== null && $existingUser->role !== 'admin') {
+                        throw new \RuntimeException('The configured admin bootstrap email belongs to a non-admin account.');
+                    }
+
+                    User::updateOrCreate(
+                        ['email' => $email],
+                        [
+                            'name' => trim($name),
+                            'password' => Hash::make($password),
+                            'role' => 'admin',
+                            'status' => 'active',
+                        ]
+                    );
+                }
+            }
+
             return;
         }
 

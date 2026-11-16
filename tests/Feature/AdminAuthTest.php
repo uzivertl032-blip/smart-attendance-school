@@ -48,6 +48,11 @@ class AdminAuthTest extends TestCase
         ];
 
         $this->app->detectEnvironment(fn (): string => 'production');
+        config(['app.admin_bootstrap' => [
+            'name' => null,
+            'email' => null,
+            'password' => null,
+        ]]);
         $this->seed(\Database\Seeders\AdminSeeder::class);
 
         foreach ($demoAccounts as $email => $credentials) {
@@ -68,6 +73,75 @@ class AdminAuthTest extends TestCase
                 'status' => 'inactive',
             ]);
         }
+    }
+
+    public function test_production_seeding_creates_an_initial_admin_from_valid_configuration(): void
+    {
+        $this->app->detectEnvironment(fn (): string => 'production');
+        config(['app.admin_bootstrap' => [
+            'name' => 'Production Administrator',
+            'email' => 'admin@smartattendance.sch.id',
+            'password' => 'a-strong-unique-password',
+        ]]);
+
+        $this->seed(\Database\Seeders\AdminSeeder::class);
+
+        $admin = User::query()->where('email', 'admin@smartattendance.sch.id')->firstOrFail();
+        $this->assertSame('admin', $admin->role);
+        $this->assertSame('active', $admin->status);
+        $this->assertSame(true, Hash::check('a-strong-unique-password', $admin->password));
+    }
+
+    public function test_production_seeding_does_not_overwrite_an_existing_active_admin(): void
+    {
+        $admin = User::factory()->create([
+            'email' => 'existing-admin@school.test',
+            'password' => Hash::make('existing-strong-password'),
+            'role' => 'admin',
+            'status' => 'active',
+        ]);
+        $this->app->detectEnvironment(fn (): string => 'production');
+        config(['app.admin_bootstrap' => [
+            'name' => 'New Administrator',
+            'email' => 'new-admin@smartattendance.sch.id',
+            'password' => 'a-new-strong-password',
+        ]]);
+
+        $this->seed(\Database\Seeders\AdminSeeder::class);
+
+        $this->assertSame(true, Hash::check('existing-strong-password', $admin->fresh()->password));
+        $this->assertDatabaseMissing('users', ['email' => 'new-admin@smartattendance.sch.id']);
+    }
+
+    public function test_production_seeding_does_not_promote_a_non_admin_bootstrap_email(): void
+    {
+        User::factory()->create([
+            'email' => 'admin@smartattendance.sch.id',
+            'role' => 'teacher',
+            'status' => 'active',
+        ]);
+        $this->app->detectEnvironment(fn (): string => 'production');
+        config(['app.admin_bootstrap' => [
+            'name' => 'Production Administrator',
+            'email' => 'admin@smartattendance.sch.id',
+            'password' => 'a-strong-unique-password',
+        ]]);
+        $this->expectException(\RuntimeException::class);
+
+        $this->seed(\Database\Seeders\AdminSeeder::class);
+    }
+
+    public function test_production_seeding_rejects_incomplete_admin_bootstrap_configuration(): void
+    {
+        $this->app->detectEnvironment(fn (): string => 'production');
+        config(['app.admin_bootstrap' => [
+            'name' => 'Production Administrator',
+            'email' => 'admin@smartattendance.sch.id',
+            'password' => 'short',
+        ]]);
+        $this->expectException(\RuntimeException::class);
+
+        $this->seed(\Database\Seeders\AdminSeeder::class);
     }
 
     public function test_admin_can_login_with_valid_credentials(): void
