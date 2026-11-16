@@ -9,6 +9,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class AdminSeeder extends Seeder
 {
@@ -40,39 +41,49 @@ class AdminSeeder extends Seeder
                 static fn ($value): bool => $value !== null && $value !== ''
             ) !== [];
 
-            if ($hasAdminBootstrap) {
-                $name = $adminBootstrap['name'] ?? null;
-                $email = $adminBootstrap['email'] ?? null;
-                $password = $adminBootstrap['password'] ?? null;
-
-                if (
-                    ! is_string($name)
-                    || trim($name) === ''
-                    || ! is_string($email)
-                    || filter_var($email, FILTER_VALIDATE_EMAIL) === false
-                    || ! is_string($password)
-                    || strlen($password) < 16
-                ) {
-                    throw new \RuntimeException('Admin bootstrap configuration is incomplete or invalid.');
-                }
-
+            if (! $hasAdminBootstrap) {
                 if (! User::query()->where('role', 'admin')->where('status', 'active')->exists()) {
-                    $existingUser = User::query()->where('email', $email)->first();
-
-                    if ($existingUser !== null && $existingUser->role !== 'admin') {
-                        throw new \RuntimeException('The configured admin bootstrap email belongs to a non-admin account.');
-                    }
-
-                    User::updateOrCreate(
-                        ['email' => $email],
-                        [
-                            'name' => trim($name),
-                            'password' => Hash::make($password),
-                            'role' => 'admin',
-                            'status' => 'active',
-                        ]
-                    );
+                    Log::warning('No active admin exists and production admin bootstrap is not configured.');
                 }
+
+                return;
+            }
+
+            $name = $adminBootstrap['name'] ?? null;
+            $email = $adminBootstrap['email'] ?? null;
+            $password = $adminBootstrap['password'] ?? null;
+
+            if (
+                ! is_string($name)
+                || trim($name) === ''
+                || ! is_string($email)
+                || filter_var($email, FILTER_VALIDATE_EMAIL) === false
+                || ! is_string($password)
+                || strlen($password) < 16
+            ) {
+                throw new \RuntimeException('Admin bootstrap configuration is incomplete or invalid.');
+            }
+
+            $existingUser = User::query()->where('email', $email)->first();
+
+            if ($existingUser !== null && $existingUser->role !== 'admin') {
+                throw new \RuntimeException('The configured admin bootstrap email belongs to a non-admin account.');
+            }
+
+            if ($existingUser === null || $existingUser->status !== 'active') {
+                User::updateOrCreate(
+                    ['email' => $email],
+                    [
+                        'name' => trim($name),
+                        'password' => Hash::make($password),
+                        'role' => 'admin',
+                        'status' => 'active',
+                    ]
+                );
+
+                Log::info('Production admin bootstrap account created or activated.');
+            } else {
+                Log::info('Production admin bootstrap account already active; credentials were not changed.');
             }
 
             return;

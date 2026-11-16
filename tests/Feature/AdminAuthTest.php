@@ -92,7 +92,7 @@ class AdminAuthTest extends TestCase
         $this->assertSame(true, Hash::check('a-strong-unique-password', $admin->password));
     }
 
-    public function test_production_seeding_does_not_overwrite_an_existing_active_admin(): void
+    public function test_production_seeding_creates_configured_admin_without_overwriting_another_admin(): void
     {
         $admin = User::factory()->create([
             'email' => 'existing-admin@school.test',
@@ -109,8 +109,31 @@ class AdminAuthTest extends TestCase
 
         $this->seed(\Database\Seeders\AdminSeeder::class);
 
+        $bootstrapAdmin = User::query()->where('email', 'new-admin@smartattendance.sch.id')->firstOrFail();
+        $this->assertSame('admin', $bootstrapAdmin->role);
+        $this->assertSame('active', $bootstrapAdmin->status);
+        $this->assertSame(true, Hash::check('a-new-strong-password', $bootstrapAdmin->password));
         $this->assertSame(true, Hash::check('existing-strong-password', $admin->fresh()->password));
-        $this->assertDatabaseMissing('users', ['email' => 'new-admin@smartattendance.sch.id']);
+    }
+
+    public function test_production_seeding_does_not_overwrite_an_existing_active_bootstrap_admin(): void
+    {
+        $admin = User::factory()->create([
+            'email' => 'admin@smartattendance.sch.id',
+            'password' => Hash::make('existing-strong-password'),
+            'role' => 'admin',
+            'status' => 'active',
+        ]);
+        $this->app->detectEnvironment(fn (): string => 'production');
+        config(['app.admin_bootstrap' => [
+            'name' => 'Production Administrator',
+            'email' => 'admin@smartattendance.sch.id',
+            'password' => 'a-strong-unique-password',
+        ]]);
+
+        $this->seed(\Database\Seeders\AdminSeeder::class);
+
+        $this->assertSame(true, Hash::check('existing-strong-password', $admin->fresh()->password));
     }
 
     public function test_production_seeding_does_not_promote_a_non_admin_bootstrap_email(): void
