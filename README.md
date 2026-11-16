@@ -173,7 +173,7 @@ Akses aplikasi melalui browser:
    Sesuaikan `MySQL` dengan nama layanan database Railway jika berbeda. Buat `APP_KEY` secara lokal, lalu masukkan hasilnya langsung ke Variables Railway; jangan commit nilainya.
 3. Railway mendeteksi aplikasi Laravel secara otomatis. Atur perintah **Pre-deploy** menjadi `php artisan migrate --force`, lalu deploy.
 4. Setelah deployment berhasil, aktifkan domain publik pada **Settings → Networking → Generate Domain**. Atur `APP_URL` ke domain `https://...` tersebut lalu deploy ulang.
-5. Jangan menjalankan seeder demo pada database production karena seeder berisi akun development. `.env` dan file environment lokal lainnya dikecualikan dari Git.
+5. Jangan menjalankan seeder demo pada database production. `AdminSeeder` tidak membuat akun contoh di production dan menonaktifkan akun contoh lama yang masih memakai password bawaan. `.env` dan file environment lokal lainnya dikecualikan dari Git.
 
 > Database baru belum berisi akun pengguna. Jangan gunakan akun demo untuk production; siapkan akun awal dengan kredensial production yang unik sebelum mengoperasikan fitur admin, guru, dan siswa.
 
