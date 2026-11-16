@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class AdminAuthTest extends TestCase
@@ -35,6 +36,38 @@ class AdminAuthTest extends TestCase
             ->assertDontSee('admin123');
         $this->get(route('teacher.login'))->assertDontSee('teacher123');
         $this->get(route('student.login'))->assertDontSee('student123');
+    }
+
+    public function test_production_seeding_does_not_create_or_leave_demo_accounts_active(): void
+    {
+        $demoAccounts = [
+            'admin@smartattendance.sch.id' => ['password' => 'admin123', 'role' => 'admin'],
+            'admin@demo.com' => ['password' => 'admin123', 'role' => 'admin'],
+            'budi.santoso@smartattendance.sch.id' => ['password' => 'teacher123', 'role' => 'teacher'],
+            'ahmad.rizky@smartattendance.sch.id' => ['password' => 'student123', 'role' => 'student'],
+        ];
+
+        $this->app->detectEnvironment(fn (): string => 'production');
+        $this->seed(\Database\Seeders\AdminSeeder::class);
+
+        foreach ($demoAccounts as $email => $credentials) {
+            $this->assertDatabaseMissing('users', ['email' => $email]);
+            User::factory()->create([
+                'email' => $email,
+                'password' => Hash::make($credentials['password']),
+                'role' => $credentials['role'],
+                'status' => 'active',
+            ]);
+        }
+
+        $this->seed(\Database\Seeders\AdminSeeder::class);
+
+        foreach ($demoAccounts as $email => $credentials) {
+            $this->assertDatabaseHas('users', [
+                'email' => $email,
+                'status' => 'inactive',
+            ]);
+        }
     }
 
     public function test_admin_can_login_with_valid_credentials(): void

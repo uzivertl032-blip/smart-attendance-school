@@ -17,6 +17,26 @@ class AdminSeeder extends Seeder
      */
     public function run(): void
     {
+        $demoAccountPasswords = [
+            'admin@smartattendance.sch.id' => 'admin123',
+            'admin@demo.com' => 'admin123',
+            'budi.santoso@smartattendance.sch.id' => 'teacher123',
+            'ahmad.rizky@smartattendance.sch.id' => 'student123',
+        ];
+
+        if (app()->environment('production')) {
+            User::query()
+                ->whereIn('email', array_keys($demoAccountPasswords))
+                ->get()
+                ->each(function (User $user) use ($demoAccountPasswords): void {
+                    if (Hash::check($demoAccountPasswords[$user->email], $user->password)) {
+                        $user->update(['status' => 'inactive']);
+                    }
+                });
+
+            return;
+        }
+
         // 1. Create Default Admin User
         $admin = User::updateOrCreate(
             ['email' => 'admin@smartattendance.sch.id'],
