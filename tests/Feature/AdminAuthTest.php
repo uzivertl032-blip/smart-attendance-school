@@ -21,6 +21,15 @@ class AdminAuthTest extends TestCase
         $response->assertSee('Login Administrator');
     }
 
+    public function test_login_form_uses_https_when_request_is_forwarded_by_a_trusted_proxy(): void
+    {
+        $this->get(route('login'), ['X-Forwarded-Proto' => 'https'])
+            ->assertSee('https://localhost/login')
+            ->assertSee('https://localhost/css/smart-ui.css')
+            ->assertSee('https://localhost/js/smart-ui.js')
+            ->assertDontSee('http://localhost');
+    }
+
     public function test_demo_credentials_are_only_rendered_in_the_local_environment(): void
     {
         $this->app->detectEnvironment(fn (): string => 'local');
