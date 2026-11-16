@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Models\Student;
+use App\Models\Teacher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -136,9 +138,9 @@ class AdminAuthTest extends TestCase
         $this->assertSame(true, Hash::check('existing-strong-password', $admin->fresh()->password));
     }
 
-    public function test_production_seeding_does_not_promote_a_non_admin_bootstrap_email(): void
+    public function test_production_seeding_allows_admin_bootstrap_email_used_by_another_role(): void
     {
-        User::factory()->create([
+        $teacher = User::factory()->create([
             'email' => 'admin@smartattendance.sch.id',
             'role' => 'teacher',
             'status' => 'active',
@@ -149,9 +151,15 @@ class AdminAuthTest extends TestCase
             'email' => 'admin@smartattendance.sch.id',
             'password' => 'a-strong-unique-password',
         ]]);
-        $this->expectException(\RuntimeException::class);
 
         $this->seed(\Database\Seeders\AdminSeeder::class);
+
+        $admin = User::query()
+            ->where('email', 'admin@smartattendance.sch.id')
+            ->where('role', 'admin')
+            ->firstOrFail();
+        $this->assertSame('teacher', $teacher->fresh()->role);
+        $this->assertSame(true, Hash::check('a-strong-unique-password', $admin->password));
     }
 
     public function test_production_seeding_rejects_incomplete_admin_bootstrap_configuration(): void
@@ -167,6 +175,57 @@ class AdminAuthTest extends TestCase
         $this->seed(\Database\Seeders\AdminSeeder::class);
     }
 
+    public function test_production_seeding_updates_each_role_to_the_same_email_with_separate_passwords(): void
+    {
+        $admin = User::factory()->create(['email' => 'old-admin@school.test', 'role' => 'admin']);
+        $teacher = User::factory()->create(['email' => 'old-teacher@school.test', 'role' => 'teacher']);
+        $student = User::factory()->create(['email' => 'old-student@school.test', 'role' => 'student']);
+        Teacher::create(['user_id' => $teacher->id, 'nip' => 'NIP-BOOTSTRAP-TEST']);
+        Student::create([
+            'user_id' => $student->id,
+            'nis' => 'NIS-BOOTSTRAP-TEST',
+            'class' => 'X-TEST',
+        ]);
+        $this->app->detectEnvironment(fn (): string => 'production');
+        config(['app.admin_bootstrap' => [
+            'name' => null,
+            'email' => null,
+            'password' => null,
+        ]]);
+        config(['app.role_bootstrap' => [
+            'admin' => [
+                'name' => 'Production Admin',
+                'email' => 'shared@school.test',
+                'password' => 'configured-admin-password',
+            ],
+            'teacher' => [
+                'name' => 'Production Teacher',
+                'email' => 'shared@school.test',
+                'password' => 'configured-teacher-password',
+            ],
+            'student' => [
+                'name' => 'Production Student',
+                'email' => 'shared@school.test',
+                'password' => 'configured-student-password',
+            ],
+        ]]);
+
+        $this->seed(\Database\Seeders\AdminSeeder::class);
+
+        $this->assertDatabaseCount('users', 3);
+        foreach ([
+            [$admin, 'admin', 'configured-admin-password'],
+            [$teacher, 'teacher', 'configured-teacher-password'],
+            [$student, 'student', 'configured-student-password'],
+        ] as [$user, $role, $password]) {
+            $user->refresh();
+            $this->assertSame('shared@school.test', $user->email);
+            $this->assertSame($role, $user->role);
+            $this->assertSame('active', $user->status);
+            $this->assertSame(true, Hash::check($password, $user->password));
+        }
+    }
+
     public function test_admin_can_login_with_valid_credentials(): void
     {
         $admin = User::factory()->create([
@@ -179,6 +238,30 @@ class AdminAuthTest extends TestCase
         $response = $this->post(route('login.post'), [
             'email' => 'admin@school.test',
             'password' => 'secret123',
+        ]);
+
+        $response->assertRedirect(route('admin.dashboard'));
+        $this->assertAuthenticatedAs($admin);
+    }
+
+    public function test_admin_portal_authenticates_the_admin_when_roles_share_an_email(): void
+    {
+        User::factory()->create([
+            'email' => 'shared@school.test',
+            'password' => bcrypt('teacher-password'),
+            'role' => 'teacher',
+            'status' => 'active',
+        ]);
+        $admin = User::factory()->create([
+            'email' => 'shared@school.test',
+            'password' => bcrypt('admin-password'),
+            'role' => 'admin',
+            'status' => 'active',
+        ]);
+
+        $response = $this->post(route('login.post'), [
+            'email' => 'shared@school.test',
+            'password' => 'admin-password',
         ]);
 
         $response->assertRedirect(route('admin.dashboard'));

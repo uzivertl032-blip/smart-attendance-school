@@ -266,10 +266,24 @@ class FaceVerificationService
         }
 
         if (is_string($target)) {
-            return Student::with('user')->where('nis', $target)->first()
-                ?? Teacher::with('user')->where('nip', $target)->first()
-                ?? (User::with(['student', 'teacher'])->where('email', $target)->first()?->student
-                    ?? User::with(['student', 'teacher'])->where('email', $target)->first()?->teacher);
+            $student = Student::with('user')->where('nis', $target)->first();
+            if ($student !== null) {
+                return $student;
+            }
+
+            $teacher = Teacher::with('user')->where('nip', $target)->first();
+            if ($teacher !== null) {
+                return $teacher;
+            }
+
+            $student = Student::with('user')
+                ->whereHas('user', fn ($query) => $query->where('email', $target))
+                ->first();
+            $teacher = Teacher::with('user')
+                ->whereHas('user', fn ($query) => $query->where('email', $target))
+                ->first();
+
+            return $student !== null && $teacher !== null ? null : ($student ?? $teacher);
         }
 
         return null;

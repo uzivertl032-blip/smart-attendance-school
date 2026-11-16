@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -66,28 +68,13 @@ class AuthController extends Controller
 
         $remember = $request->boolean('remember');
 
-        // 3. Attempt Authentication
-        if (Auth::attempt($credentials, $remember)) {
-            $user = Auth::user();
+        $user = User::query()
+            ->where('email', $credentials['email'])
+            ->where('role', 'admin')
+            ->first();
 
-            // Check role and active status
-            if ($user->role !== 'admin') {
-                Auth::logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-
-                RateLimiter::hit($throttleKey);
-
-                return back()->withErrors([
-                    'email' => 'Akses ditolak. Portal ini khusus untuk akun Administrator.',
-                ])->onlyInput('email');
-            }
-
-            if ($user->status !== 'active') {
-                Auth::logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-
+        if ($user !== null && Hash::check($credentials['password'], $user->password)) {
+            if (! $user->isActive()) {
                 RateLimiter::hit($throttleKey);
 
                 return back()->withErrors([
@@ -95,6 +82,7 @@ class AuthController extends Controller
                 ])->onlyInput('email');
             }
 
+            Auth::login($user, $remember);
             // Success: clear rate limiter and regenerate session ID to prevent fixation
             RateLimiter::clear($throttleKey);
             $request->session()->regenerate();

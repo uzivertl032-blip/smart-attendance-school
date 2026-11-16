@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class StoreTeacherRequest extends FormRequest
 {
@@ -25,7 +26,7 @@ class StoreTeacherRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->where('role', 'teacher')],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'nip' => ['required', 'string', 'max:30', 'unique:teachers,nip'],
             'status' => ['required', 'in:active,inactive'],

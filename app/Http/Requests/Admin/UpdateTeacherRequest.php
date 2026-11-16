@@ -29,7 +29,13 @@ class UpdateTeacherRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->where('role', 'teacher')->ignore($userId),
+            ],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'nip' => ['required', 'string', 'max:30', Rule::unique('teachers', 'nip')->ignore($teacher->id)],
             'status' => ['required', 'in:active,inactive'],

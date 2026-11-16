@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -53,7 +55,7 @@ class StudentAuthController extends Controller
             'password.required' => 'Kata sandi wajib diisi.',
         ]);
 
-        $throttleKey = Str::transliterate('student_login|'.Str::lower($request->input('email')).'|'.$request->ip());
+        $throttleKey = Str::transliterate(Str::lower($request->input('email')).'|'.$request->ip());
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
@@ -64,24 +66,13 @@ class StudentAuthController extends Controller
 
         $remember = $request->boolean('remember');
 
-        if (Auth::attempt($credentials, $remember)) {
-            $user = Auth::user();
+        $user = User::query()
+            ->where('email', $credentials['email'])
+            ->where('role', 'student')
+            ->first();
 
-            if (! $user->isStudent()) {
-                Auth::logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-                RateLimiter::hit($throttleKey);
-
-                return back()->withErrors([
-                    'email' => 'Akses ditolak. Portal ini khusus untuk akun Siswa.',
-                ])->onlyInput('email');
-            }
-
+        if ($user !== null && Hash::check($credentials['password'], $user->password)) {
             if (! $user->isActive()) {
-                Auth::logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
                 RateLimiter::hit($throttleKey);
 
                 return back()->withErrors([
@@ -89,6 +80,7 @@ class StudentAuthController extends Controller
                 ])->onlyInput('email');
             }
 
+            Auth::login($user, $remember);
             RateLimiter::clear($throttleKey);
             $request->session()->regenerate();
 

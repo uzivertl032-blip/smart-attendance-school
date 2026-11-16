@@ -60,6 +60,24 @@ return [
         'password' => env('ADMIN_BOOTSTRAP_PASSWORD'),
     ],
 
+    'role_bootstrap' => [
+        'admin' => [
+            'name' => env('ROLE_BOOTSTRAP_ADMIN_NAME'),
+            'email' => env('ROLE_BOOTSTRAP_ADMIN_EMAIL'),
+            'password' => env('ROLE_BOOTSTRAP_ADMIN_PASSWORD'),
+        ],
+        'teacher' => [
+            'name' => env('ROLE_BOOTSTRAP_TEACHER_NAME'),
+            'email' => env('ROLE_BOOTSTRAP_TEACHER_EMAIL'),
+            'password' => env('ROLE_BOOTSTRAP_TEACHER_PASSWORD'),
+        ],
+        'student' => [
+            'name' => env('ROLE_BOOTSTRAP_STUDENT_NAME'),
+            'email' => env('ROLE_BOOTSTRAP_STUDENT_EMAIL'),
+            'password' => env('ROLE_BOOTSTRAP_STUDENT_PASSWORD'),
+        ],
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

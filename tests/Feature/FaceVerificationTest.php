@@ -253,4 +253,22 @@ class FaceVerificationTest extends TestCase
             ]);
         $this->assertStringContainsString('Wajah tidak terdaftar', $response->json('message'));
     }
+
+    public function test_shared_email_does_not_select_an_ambiguous_face_verification_target(): void
+    {
+        $this->teacherUser->update(['email' => $this->studentUser->email]);
+
+        $response = $this->postJson(route('attendance.verify'), [
+            'descriptor' => $this->registeredVector,
+            'faces_detected' => 1,
+            'identifier' => $this->studentUser->email,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'status' => 'NOT_REGISTERED',
+                'user' => null,
+                'person_code' => null,
+            ]);
+    }
 }

@@ -53,6 +53,30 @@ class TeacherAuthTest extends TestCase
         $this->assertAuthenticatedAs($teacher);
     }
 
+    public function test_teacher_portal_authenticates_the_teacher_when_roles_share_an_email(): void
+    {
+        User::factory()->create([
+            'email' => 'shared@school.test',
+            'password' => bcrypt('admin-password'),
+            'role' => 'admin',
+            'status' => 'active',
+        ]);
+        $teacher = User::factory()->create([
+            'email' => 'shared@school.test',
+            'password' => bcrypt('teacher-password'),
+            'role' => 'teacher',
+            'status' => 'active',
+        ]);
+
+        $response = $this->post(route('teacher.login.post'), [
+            'email' => 'shared@school.test',
+            'password' => 'teacher-password',
+        ]);
+
+        $response->assertRedirect(route('teacher.dashboard'));
+        $this->assertAuthenticatedAs($teacher);
+    }
+
     // =========================================================================
     // Role Guard
     // =========================================================================

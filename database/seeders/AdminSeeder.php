@@ -41,49 +41,116 @@ class AdminSeeder extends Seeder
                 static fn ($value): bool => $value !== null && $value !== ''
             ) !== [];
 
-            if (! $hasAdminBootstrap) {
-                if (! User::query()->where('role', 'admin')->where('status', 'active')->exists()) {
-                    Log::warning('No active admin exists and production admin bootstrap is not configured.');
+            if ($hasAdminBootstrap) {
+                $name = $adminBootstrap['name'] ?? null;
+                $email = $adminBootstrap['email'] ?? null;
+                $password = $adminBootstrap['password'] ?? null;
+
+                if (
+                    ! is_string($name)
+                    || trim($name) === ''
+                    || ! is_string($email)
+                    || filter_var($email, FILTER_VALIDATE_EMAIL) === false
+                    || ! is_string($password)
+                    || strlen($password) < 16
+                ) {
+                    throw new \RuntimeException('Admin bootstrap configuration is incomplete or invalid.');
                 }
 
-                return;
+                $existingUser = User::query()
+                    ->where('email', $email)
+                    ->where('role', 'admin')
+                    ->first();
+
+                if ($existingUser === null || $existingUser->status !== 'active') {
+                    User::updateOrCreate(
+                        ['email' => $email, 'role' => 'admin'],
+                        [
+                            'name' => trim($name),
+                            'password' => Hash::make($password),
+                            'status' => 'active',
+                        ]
+                    );
+
+                    Log::info('Production admin bootstrap account created or activated.');
+                } else {
+                    Log::info('Production admin bootstrap account already active; credentials were not changed.');
+                }
+            } elseif (! User::query()->where('role', 'admin')->where('status', 'active')->exists()) {
+                Log::warning('No active admin exists and production admin bootstrap is not configured.');
             }
 
-            $name = $adminBootstrap['name'] ?? null;
-            $email = $adminBootstrap['email'] ?? null;
-            $password = $adminBootstrap['password'] ?? null;
+            $roleBootstrapAccounts = config('app.role_bootstrap', []);
 
-            if (
-                ! is_string($name)
-                || trim($name) === ''
-                || ! is_string($email)
-                || filter_var($email, FILTER_VALIDATE_EMAIL) === false
-                || ! is_string($password)
-                || strlen($password) < 16
-            ) {
-                throw new \RuntimeException('Admin bootstrap configuration is incomplete or invalid.');
-            }
+            foreach ($roleBootstrapAccounts as $role => $account) {
+                $hasRoleBootstrap = array_filter(
+                    $account,
+                    static fn ($value): bool => $value !== null && $value !== ''
+                ) !== [];
 
-            $existingUser = User::query()->where('email', $email)->first();
+                if (! $hasRoleBootstrap) {
+                    continue;
+                }
 
-            if ($existingUser !== null && $existingUser->role !== 'admin') {
-                throw new \RuntimeException('The configured admin bootstrap email belongs to a non-admin account.');
-            }
+                $name = $account['name'] ?? null;
+                $email = $account['email'] ?? null;
+                $password = $account['password'] ?? null;
 
-            if ($existingUser === null || $existingUser->status !== 'active') {
-                User::updateOrCreate(
-                    ['email' => $email],
-                    [
+                if (
+                    ! in_array($role, ['admin', 'teacher', 'student'], true)
+                    || ! is_string($name)
+                    || trim($name) === ''
+                    || ! is_string($email)
+                    || filter_var($email, FILTER_VALIDATE_EMAIL) === false
+                    || ! is_string($password)
+                    || $password === ''
+                ) {
+                    throw new \RuntimeException("The production {$role} bootstrap configuration is incomplete or invalid.");
+                }
+
+                $user = User::query()
+                    ->where('email', $email)
+                    ->where('role', $role)
+                    ->first()
+                    ?? User::query()
+                        ->where('role', $role)
+                        ->where('status', 'active')
+                        ->first()
+                    ?? User::query()->where('role', $role)->first();
+
+                if ($user === null) {
+                    $user = User::create([
                         'name' => trim($name),
+                        'email' => $email,
                         'password' => Hash::make($password),
-                        'role' => 'admin',
+                        'role' => $role,
                         'status' => 'active',
-                    ]
-                );
+                    ]);
+                } else {
+                    $user->update([
+                        'name' => trim($name),
+                        'email' => $email,
+                        'password' => Hash::make($password),
+                        'status' => 'active',
+                    ]);
+                }
 
-                Log::info('Production admin bootstrap account created or activated.');
-            } else {
-                Log::info('Production admin bootstrap account already active; credentials were not changed.');
+                if ($role === 'teacher') {
+                    Teacher::firstOrCreate(
+                        ['user_id' => $user->id],
+                        ['nip' => "BOOTSTRAP-{$user->id}"]
+                    );
+                } elseif ($role === 'student') {
+                    Student::firstOrCreate(
+                        ['user_id' => $user->id],
+                        [
+                            'nis' => "BOOTSTRAP-{$user->id}",
+                            'class' => 'Belum ditentukan',
+                        ]
+                    );
+                }
+
+                Log::info("Production {$role} bootstrap account created or updated.");
             }
 
             return;

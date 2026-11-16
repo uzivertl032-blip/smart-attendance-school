@@ -64,6 +64,76 @@ class StudentAuthTest extends TestCase
         $this->assertAuthenticatedAs($student);
     }
 
+    public function test_student_portal_authenticates_the_student_when_roles_share_an_email(): void
+    {
+        User::factory()->create([
+            'email' => 'shared@school.test',
+            'password' => bcrypt('admin-password'),
+            'role' => 'admin',
+            'status' => 'active',
+        ]);
+        User::factory()->create([
+            'email' => 'shared@school.test',
+            'password' => bcrypt('teacher-password'),
+            'role' => 'teacher',
+            'status' => 'active',
+        ]);
+        $student = User::factory()->create([
+            'email' => 'shared@school.test',
+            'password' => bcrypt('student-password'),
+            'role' => 'student',
+            'status' => 'active',
+        ]);
+
+        $response = $this->post(route('student.login.post'), [
+            'email' => 'shared@school.test',
+            'password' => 'student-password',
+        ]);
+
+        $response->assertRedirect(route('student.dashboard'));
+        $this->assertAuthenticatedAs($student);
+    }
+
+    public function test_shared_email_passwords_do_not_authenticate_a_different_role(): void
+    {
+        User::factory()->create([
+            'email' => 'shared@school.test',
+            'password' => bcrypt('admin-password'),
+            'role' => 'admin',
+            'status' => 'active',
+        ]);
+        User::factory()->create([
+            'email' => 'shared@school.test',
+            'password' => bcrypt('teacher-password'),
+            'role' => 'teacher',
+            'status' => 'active',
+        ]);
+        User::factory()->create([
+            'email' => 'shared@school.test',
+            'password' => bcrypt('student-password'),
+            'role' => 'student',
+            'status' => 'active',
+        ]);
+
+        $this->post(route('login.post'), [
+            'email' => 'shared@school.test',
+            'password' => 'teacher-password',
+        ])->assertSessionHasErrors('email');
+        $this->assertGuest();
+
+        $this->post(route('teacher.login.post'), [
+            'email' => 'shared@school.test',
+            'password' => 'student-password',
+        ])->assertSessionHasErrors('email');
+        $this->assertGuest();
+
+        $this->post(route('student.login.post'), [
+            'email' => 'shared@school.test',
+            'password' => 'admin-password',
+        ])->assertSessionHasErrors('email');
+        $this->assertGuest();
+    }
+
     // =========================================================================
     // Role Guard
     // =========================================================================
