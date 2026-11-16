@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 350" width="100%" height="100%" fill="none">
+  <defs>
+    <linearGradient id="tc-bg" x1="0" y1="0" x2="500" y2="350" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#EFF6FF"/>
+      <stop offset="100%" stop-color="#DBEAFE"/>
+    </linearGradient>
+    <linearGradient id="tc-board" x1="50" y1="30" x2="450" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+    <linearGradient id="tc-blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#3B82F6"/>
+    </linearGradient>
+    <filter id="tc-shadow" x="-10" y="-10" width="520" height="370" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#1E3A8A" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <!-- Background Card Canvas -->
+  <rect width="500" height="350" rx="20" fill="url(#tc-bg)"/>
+  
+  <!-- Interactive Smart Board -->
+  <g filter="url(#tc-shadow)">
+    <rect x="70" y="30" width="360" height="170" rx="14" fill="url(#tc-board)"/>
+    <rect x="70" y="30" width="360" height="170" rx="14" stroke="#38BDF8" stroke-opacity="0.3" stroke-width="2"/>
+    
+    <!-- Smart Board UI Header -->
+    <rect x="70" y="30" width="360" height="28" rx="14" fill="#1E293B" fill-opacity="0.8"/>
+    <circle cx="92" cy="44" r="4" fill="#EF4444"/>
+    <circle cx="106" cy="44" r="4" fill="#F59E0B"/>
+    <circle cx="120" cy="44" r="4" fill="#10B981"/>
+    <text x="250" y="48" fill="#94A3B8" font-family="'Plus Jakarta Sans', Inter, sans-serif" font-size="11" font-weight="600" text-anchor="middle">KELAS DIGITAL &amp; REKAP KEHADIRAN</text>
+
+    <!-- Smart Board Charts & Content -->
+    <!-- Attendance Bar chart -->
+    <rect x="100" y="140" width="16" height="40" rx="4" fill="#2563EB"/>
+    <rect x="124" y="120" width="16" height="60" rx="4" fill="#3B82F6"/>
+    <rect x="148" y="100" width="16" height="80" rx="4" fill="#60A5FA"/>
+    <rect x="172" y="110" width="16" height="70" rx="4" fill="#2563EB"/>
+    <rect x="196" y="90" width="16" height="90" rx="4" fill="#10B981"/>
+    
+    <!-- Smart Board Info Card -->
+    <rect x="235" y="75" width="170" height="55" rx="8" fill="#334155" fill-opacity="0.8" stroke="#475569" stroke-width="1"/>
+    <text x="247" y="94" fill="#E2E8F0" font-family="sans-serif" font-size="10" font-weight="700">Tingkat Kehadiran: 98.4%</text>
+    <text x="247" y="112" fill="#38BDF8" font-family="sans-serif" font-size="9">32 / 32 Siswa Hadir Tepat Waktu</text>
+    <rect x="247" y="118" width="145" height="4" rx="2" fill="#475569"/>
+    <rect x="247" y="118" width="140" height="4" rx="2" fill="#10B981"/>
+
+    <!-- Wave / Formula line on board -->
+    <path d="M 235 155 Q 275 140, 315 160 T 395 150" stroke="#F59E0B" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- Classroom Floor Desk -->
+  <path d="M 20 310 L 480 310 L 460 350 L 40 350 Z" fill="#CBD5E1" fill-opacity="0.6"/>
+  <rect x="60" y="270" width="110" height="45" rx="6" fill="#FFFFFF" filter="url(#tc-shadow)"/>
+  <rect x="70" y="280" width="40" height="25" rx="3" fill="#E2E8F0"/>
+  <rect x="118" y="285" width="42" height="6" rx="2" fill="#2563EB"/>
+  <rect x="118" y="295" width="30" height="4" rx="2" fill="#94A3B8"/>
+
+  <!-- Teacher Character (Right/Center Front) -->
+  <g transform="translate(300, 160)">
+    <!-- Shadow -->
+    <ellipse cx="60" cy="180" rx="45" ry="10" fill="#64748B" fill-opacity="0.3"/>
+    
+    <!-- Body / Blazer (Royal Blue & Navy) -->
+    <path d="M 35 100 Q 60 90, 85 100 L 95 175 L 25 175 Z" fill="#1E293B"/>
+    <!-- Inner Shirt -->
+    <polygon points="50,100 70,100 60,130" fill="#FFFFFF"/>
+    <!-- Tie / Collar -->
+    <polygon points="58,115 62,115 63,145 57,145" fill="#2563EB"/>
+    <!-- Blazer Lapels -->
+    <path d="M 35 100 L 55 130 L 48 165 L 25 175 Z" fill="#0F172A"/>
+    <path d="M 85 100 L 65 130 L 72 165 L 95 175 Z" fill="#0F172A"/>
+
+    <!-- Neck & Head -->
+    <rect x="52" y="78" width="16" height="15" fill="#FCD34D" rx="4"/>
+    <circle cx="60" cy="58" r="22" fill="#FCD34D"/>
+    
+    <!-- Hair -->
+    <path d="M 38 54 Q 60 30, 82 54 Q 75 35, 60 36 Q 45 35, 38 54 Z" fill="#334155"/>
+    <path d="M 38 54 Q 42 70, 40 76 Q 46 64, 48 56 Z" fill="#334155"/>
+
+    <!-- Glasses -->
+    <rect x="47" y="52" width="10" height="7" rx="2" stroke="#1E293B" stroke-width="1.5" fill="none"/>
+    <rect x="63" y="52" width="10" height="7" rx="2" stroke="#1E293B" stroke-width="1.5" fill="none"/>
+    <line x1="57" y1="55" x2="63" y2="55" stroke="#1E293B" stroke-width="1.5"/>
+
+    <!-- Smile -->
+    <path d="M 55 68 Q 60 72, 65 68" stroke="#78350F" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+
+    <!-- Left Arm holding Tablet / Pointer -->
+    <!-- Pointer arm towards board -->
+    <path d="M 35 105 Q 10 90, -10 65" stroke="#1E293B" stroke-width="14" stroke-linecap="round" fill="none"/>
+    <circle cx="-12" cy="62" r="6" fill="#FCD34D"/>
+    <!-- Digital Stylus -->
+    <line x1="-16" y1="58" x2="-35" y2="35" stroke="#2563EB" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="-35" cy="35" r="4" fill="#38BDF8"/>
+    
+    <!-- Right Arm holding digital tablet -->
+    <path d="M 85 105 Q 105 125, 95 145" stroke="#1E293B" stroke-width="12" stroke-linecap="round" fill="none"/>
+    <circle cx="95" cy="147" r="6" fill="#FCD34D"/>
+    <!-- Tablet -->
+    <rect x="85" y="130" width="32" height="24" rx="3" fill="#0F172A" stroke="#38BDF8" stroke-width="1.5"/>
+    <rect x="88" y="133" width="26" height="18" rx="2" fill="#2563EB"/>
+    <line x1="91" y1="138" x2="108" y2="138" stroke="#FFFFFF" stroke-width="1.5"/>
+    <line x1="91" y1="143" x2="103" y2="143" stroke="#FFFFFF" stroke-width="1.5"/>
+  </g>
+
+  <!-- Student listening (Foreground Left silhouette/modern avatar) -->
+  <g transform="translate(80, 240)">
+    <ellipse cx="25" cy="80" rx="30" ry="8" fill="#64748B" fill-opacity="0.2"/>
+    <!-- Back of student head & shoulders -->
+    <path d="M 0 80 Q 25 55, 50 80 Z" fill="#3B82F6"/>
+    <circle cx="25" cy="45" r="16" fill="#FCD34D"/>
+    <path d="M 12 40 Q 25 25, 38 40 Q 30 28, 20 30 Z" fill="#1E293B"/>
+    <!-- Laptop screen glow -->
+    <polygon points="5,70 45,70 40,55 10,55" fill="#E0F2FE" fill-opacity="0.7"/>
+  </g>
+
+  <!-- Floating Badge: Guru Smart -->
+  <g transform="translate(30, 45)" filter="url(#tc-shadow)">
+    <rect width="130" height="34" rx="17" fill="#FFFFFF"/>
+    <circle cx="18" cy="17" r="10" fill="#2563EB"/>
+    <path d="M 14 17 L 17 20 L 22 14" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <text x="36" y="21" fill="#0F172A" font-family="'Plus Jakarta Sans', sans-serif" font-size="10" font-weight="700">Presensi Terverifikasi</text>
+  </g>
+</svg>
+

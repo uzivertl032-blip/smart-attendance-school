@@ -1,0 +1,104 @@
+<?php
+
+namespace App\Http\Controllers\Student;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+
+class StudentAuthController extends Controller
+{
+    /**
+     * Show the student login form.
+     */
+    public function showLoginForm(): View|RedirectResponse
+    {
+        if (Auth::check()) {
+            $user = Auth::user();
+
+            if ($user->isStudent()) {
+                return redirect()->route('student.dashboard');
+            }
+
+            if ($user->isTeacher()) {
+                return redirect()->route('teacher.dashboard');
+            }
+
+            if ($user->isAdmin()) {
+                return redirect()->route('admin.dashboard');
+            }
+
+            return redirect()->route('attendance.index');
+        }
+
+        return view('auth.student-login');
+    }
+
+    /**
+     * Handle an authentication attempt for Student.
+     */
+    public function login(Request $request): RedirectResponse
+    {
+        $credentials = $request->validate([
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
+        ], [
+            'email.required' => 'Alamat email siswa wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'password.required' => 'Kata sandi wajib diisi.',
+        ]);
+
+        $throttleKey = Str::transliterate('student_login|'.Str::lower($request->input('email')).'|'.$request->ip());
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            throw ValidationException::withMessages([
+                'email' => "Terlalu banyak percobaan login. Silakan coba lagi dalam {$seconds} detik.",
+            ]);
+        }
+
+        $remember = $request->boolean('remember');
+
+        if (Auth::attempt($credentials, $remember)) {
+            $user = Auth::user();
+
+            if (! $user->isStudent()) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                RateLimiter::hit($throttleKey);
+
+                return back()->withErrors([
+                    'email' => 'Akses ditolak. Portal ini khusus untuk akun Siswa.',
+                ])->onlyInput('email');
+            }
+
+            if (! $user->isActive()) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                RateLimiter::hit($throttleKey);
+
+                return back()->withErrors([
+                    'email' => 'Akun Siswa Anda berstatus non-aktif. Silakan hubungi pihak sekolah.',
+                ])->onlyInput('email');
+            }
+
+            RateLimiter::clear($throttleKey);
+            $request->session()->regenerate();
+
+            return redirect()->intended(route('student.dashboard'))->with('success', 'Selamat datang, '.$user->name.'!');
+        }
+
+        RateLimiter::hit($throttleKey);
+
+        return back()->withErrors([
+            'email' => 'Kombinasi email dan kata sandi siswa tidak sesuai.',
+        ])->onlyInput('email');
+    }
+}
